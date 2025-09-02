@@ -1,0 +1,56 @@
+.daily-sentence-box {
+    box-shadow: inset 0 0 10px 10px alpha(@accent_bg_color, 0.14);
+    padding: 50px;
+    color: @accent_color;
+    font-size: 1.33rem;
+}
+.session-button.session-day {
+    background: @success_container_bg_color;
+}
+.session-button.session-day:hover {
+    background: shade(@success_container_bg_color, 0.9);
+}
+.session-button.session-day:active {
+    background: shade(@success_container_bg_color, 0.86);
+}
+.session-button.session-day:disabled {
+    background: none;
+}
+.session-button {
+    background: none;
+}
+.session-button label {
+    font-weight: 400;
+    font-size: 1.33rem;
+}
+.session-button:hover {
+    background: shade(@accent_container_bg_color, 0.9);
+}
+.session-button:active {
+    background: shade(@accent_container_bg_color, 0.86);
+}
+.session-button:disabled {
+    background: none;
+}
+.report-background {
+    background: linear-gradient(
+        90deg,
+        @success_container_bg_color 0%,
+        @accent_container_bg_color 100%
+    );
+}
+.metric-star {
+    background: alpha(@view_bg_color, 0.9);
+    border-radius: 50px;
+    box-shadow: 0 4px 20px alpha(@shadow, 0.1);
+}
+.metric-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: @accent_color;
+}
+.metric-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: @view_fg_color;
+}

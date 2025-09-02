@@ -6,6 +6,8 @@ Breathing Mindfulness application written in Vala.
 
 ###
 
+![Light screenshot](data/screenshot.png)
+
 ## 💝 Donations
 
 Would you like to support the development of this app to new heights?

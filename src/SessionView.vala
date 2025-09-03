@@ -37,7 +37,7 @@ namespace Bremin {
             append(time_label);
 
             breathing_area = new Gtk.DrawingArea();
-            breathing_area.set_size_request(250, 250);
+            breathing_area.set_size_request(377, 377);
             breathing_area.set_hexpand(false);
             breathing_area.set_vexpand(false);
             breathing_area.set_halign(Gtk.Align.CENTER);
@@ -226,73 +226,157 @@ namespace Bremin {
         }
 
         private void draw_breathing_flower(Gtk.DrawingArea area, Cairo.Context cr, int width, int height) {
-            double center_x = width / 2.0;
-            double center_y = height / 2.0;
+            double center_x = width / 2.0; // 188.5
+            double center_y = height / 2.0; // 188.5
 
-            double base_size = Math.fmin(width, height) / 2.5;
-            double breath_multiplier;
+            // Fixed dimensions: 377x377 area, 355px max diameter, 211px min diameter
+            double max_radius = 177.5; // 355px diameter
+            double min_radius = 105.5; // 211px diameter
+
+            // Calculate size multiplier based on breath phase
+            double size_multiplier;
+            double min_multiplier = min_radius / max_radius; // ~0.594
 
             if (breath_phase < 0.25) {
-                breath_multiplier = breath_phase * 4.0;
+                // Inhale: grow from min to max
+                size_multiplier = min_multiplier + (breath_phase * 4.0) * (1.0 - min_multiplier);
             } else if (breath_phase < 0.5) {
-                breath_multiplier = 1.0;
+                // Hold inhaled: stay at max
+                size_multiplier = 1.0;
             } else if (breath_phase < 0.75) {
-                breath_multiplier = 1.0 - ((breath_phase - 0.5) * 4.0);
+                // Exhale: shrink from max to min
+                size_multiplier = 1.0 - ((breath_phase - 0.5) * 4.0) * (1.0 - min_multiplier);
             } else {
-                breath_multiplier = 0.0;
+                // Hold exhaled: stay at min
+                size_multiplier = min_multiplier;
             }
 
-            double petal_size = base_size * (0.6 + 0.4 * breath_multiplier);
+            double current_radius = max_radius * size_multiplier;
 
-            double spiral_time = elapsed_seconds * 0.1;
+            // Draw 2 blue sunny shapes (outer layers)
+            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.95,
+                           {0.55f, 0.65f, 0.85f, 0.5f}); // Outer blue layer
+            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.9,
+                           {0.55f, 0.65f, 0.85f, 0.2f}); // Inner blue layer
 
-            Gdk.RGBA petal_color;
-            if (breath_phase < 0.5) {
-                petal_color = {0.5f, 0.8f, 0.0f, 0.9f};
-            } else {
-                petal_color = {0.1f, 0.3f, 0.9f, 0.9f};
+            // Draw acid yellow sunny shapes (decreasing sizes)
+            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.85,
+                           {0.85f, 0.9f, 0.4f, 0.2f});
+            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.8,
+                           {0.85f, 0.9f, 0.4f, 0.2f});
+            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.75,
+                           {0.85f, 0.9f, 0.4f, 0.2f});
+            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.7,
+                           {0.85f, 0.9f, 0.4f, 0.2f});
+            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.65,
+                           {0.85f, 0.9f, 0.4f, 0.2f});
+            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.6,
+                           {0.85f, 0.9f, 0.4f, 0.2f});
+            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.55,
+                           {0.85f, 0.9f, 0.4f, 0.2f});
+
+            // Draw center - Flower shape at constant size, solid color
+            double center_size = 12.0; // Fixed size, no scaling
+            draw_flower_shape(cr, center_x, center_y, center_size,
+                            {0.137f, 0.224f, 0.553f, 1.0f}); // Dark blue, solid
+        }
+
+        private void draw_sunny_shape(Cairo.Context cr, double center_x, double center_y,
+                                            double radius, Gdk.RGBA color) {
+            cr.save();
+            cr.translate(center_x, center_y);
+
+            cr.new_path();
+
+            // Create smooth sunny shape with 8 bulges using continuous sine wave
+            int points = 100; // High resolution for smooth curve
+            int bulges = 8;
+            double base_radius = radius * 0.75;
+            double bulge_amount = radius * 0.05;
+
+            for (int i = 0; i <= points; i++) {
+                double angle = (2.0 * Math.PI * i) / points;
+
+                // Create smooth radius variation using sine wave for bulges
+                double bulge_phase = angle * bulges + Math.PI / 2.0;
+                double radius_variation = Math.sin(bulge_phase);
+                double current_radius = base_radius + bulge_amount * radius_variation;
+
+                double x = Math.cos(angle) * current_radius;
+                double y = Math.sin(angle) * current_radius;
+
+                if (i == 0) {
+                    cr.move_to(x, y);
+                } else {
+                    cr.line_to(x, y);
+                }
             }
+            cr.close_path();
 
-            for (int i = 0; i < 6; i++) {
-                double base_angle = (i * Math.PI) / 3.0;
+            // Solid color with alpha
+            cr.set_source_rgba(color.red, color.green, color.blue, color.alpha);
+            cr.fill();
 
-                double spiral_offset = 0.0;
-                if (jitter_enabled && is_running && !is_paused) {
-                    double petal_phase = spiral_time + (i * 0.3);
-                    spiral_offset = Math.sin(petal_phase) * 0.05;
+            cr.restore();
+        }
+
+        private void draw_flower_shape(Cairo.Context cr, double center_x, double center_y,
+                                             double radius, Gdk.RGBA color) {
+            cr.save();
+            cr.translate(center_x, center_y);
+
+            cr.new_path();
+
+            // Create flower shape with 8 pointed teardrop petals
+            int petals = 8; // N, NE, E, SE, S, SW, W, NW
+            for (int i = 0; i < petals; i++) {
+                double angle = (2.0 * Math.PI * i) / petals;
+
+                // Create teardrop petal shape
+                double petal_length = radius;
+                double petal_width = radius * 2;
+
+                // Calculate petal tip position
+                double tip_x = Math.cos(angle) * petal_length;
+                double tip_y = Math.sin(angle) * petal_length;
+
+                // Calculate base control points for petal width
+                double base_width_angle1 = angle - Math.PI / 2.0;
+                double base_width_angle2 = angle + Math.PI / 2.0;
+
+                double base_x1 = Math.cos(base_width_angle1) * petal_width * 0.5;
+                double base_y1 = Math.sin(base_width_angle1) * petal_width * 0.5;
+                double base_x2 = Math.cos(base_width_angle2) * petal_width * 0.5;
+                double base_y2 = Math.sin(base_width_angle2) * petal_width * 0.5;
+
+                // Draw teardrop petal using curves
+                if (i == 0) {
+                    cr.move_to(0, 0); // Start from center
+                } else {
+                    cr.line_to(0, 0); // Connect to center
                 }
 
-                double final_angle = base_angle + spiral_offset;
-
-                cr.save();
-                cr.translate(center_x, center_y);
-                cr.rotate(final_angle);
-
-                cr.move_to(0, 0);
+                // Left curve of petal
                 cr.curve_to(
-                    petal_size * 0.5, -petal_size * 0.8,
-                    petal_size * 0.5, -petal_size * 0.8,
-                    petal_size, -petal_size * 0.35
-                );
-                cr.curve_to(
-                    petal_size * 0.8, petal_size * 0.3,
-                    petal_size * 0.8, petal_size * 0.3,
-                    0, 0
+                    base_x1 * 0.3, base_y1 * 0.3,  // Control point near center
+                    tip_x * 0.7 + base_x1 * 0.3, tip_y * 0.7 + base_y1 * 0.3,  // Control point towards tip
+                    tip_x, tip_y  // Petal tip
                 );
 
-                var pattern = new Cairo.Pattern.radial(0, 0, 0, 0, 0, petal_size);
-                pattern.add_color_stop_rgba(0, petal_color.red, petal_color.green, petal_color.blue, petal_color.alpha);
-                pattern.add_color_stop_rgba(1, petal_color.red, petal_color.green, petal_color.blue, petal_color.alpha * 0.5);
-
-                cr.set_source(pattern);
-                cr.fill();
-
-                cr.restore();
+                // Right curve of petal back to center
+                cr.curve_to(
+                    tip_x * 0.7 + base_x2 * 0.3, tip_y * 0.7 + base_y2 * 0.3,  // Control point towards tip
+                    base_x2 * 0.3, base_y2 * 0.3,  // Control point near center
+                    0, 0  // Back to center
+                );
             }
+            cr.close_path();
 
-            cr.set_source_rgba(0.0f, 0.0f, 0.0f, 0.9f);
-            cr.arc(center_x, center_y, petal_size * 0.1, 0, Math.PI * 2);
+            // Solid color
+            cr.set_source_rgba(color.red, color.green, color.blue, color.alpha);
             cr.fill();
+
+            cr.restore();
         }
     }
 }

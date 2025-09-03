@@ -54,31 +54,30 @@ namespace Bremin {
             append(stats_grid);
 
             var days_title = new Gtk.Label("Days");
-            days_title.add_css_class("view-subtitle");
-            stats_grid.attach(days_title, 0, 0);
+            stats_grid.attach(days_title, 0, 1);
 
             days_label = new Gtk.Label("0");
             days_label.add_css_class("display");
-            stats_grid.attach(days_label, 0, 1);
+            stats_grid.attach(days_label, 0, 0);
 
             var breaths_title = new Gtk.Label("Breaths");
-            breaths_title.add_css_class("view-subtitle");
-            stats_grid.attach(breaths_title, 1, 0);
+            stats_grid.attach(breaths_title, 1, 1);
 
             breaths_label = new Gtk.Label("0");
             breaths_label.add_css_class("display");
-            stats_grid.attach(breaths_label, 1, 1);
+            stats_grid.attach(breaths_label, 1, 0);
 
             var minutes_title = new Gtk.Label("Minutes");
-            minutes_title.add_css_class("view-subtitle");
-            stats_grid.attach(minutes_title, 2, 0);
+            stats_grid.attach(minutes_title, 2, 1);
 
             minutes_label = new Gtk.Label("0");
             minutes_label.add_css_class("display");
-            stats_grid.attach(minutes_label, 2, 1);
+            stats_grid.attach(minutes_label, 2, 0);
 
             var exp_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 4);
             exp_box.set_margin_bottom(12);
+            exp_box.set_margin_start(12);
+            exp_box.set_margin_end(12);
             append(exp_box);
 
             var exp_box_labels = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);

@@ -4,30 +4,12 @@
     color: @success_color;
     font-size: 1.33rem;
 }
-.session-button.session-day {
-    background: @suggested_container_bg_color;
-}
-.session-button.session-day:hover {
-    background: shade(@suggested_container_bg_color, 0.9);
-}
-.session-button.session-day:active {
-    background: shade(@suggested_container_bg_color, 0.86);
-}
-.session-button.session-day:disabled {
-    background: none;
-}
 .session-button {
     background: none;
 }
 .session-button label {
     font-weight: 400;
     font-size: 1.33rem;
-}
-.session-button:hover {
-    background: shade(@accent_container_bg_color, 0.9);
-}
-.session-button:active {
-    background: shade(@accent_container_bg_color, 0.86);
 }
 .session-button:disabled {
     background: none;
@@ -53,4 +35,8 @@
     font-size: 14px;
     font-weight: 500;
     color: @view_fg_color;
+}
+
+.month-label {
+    color: @success_bg_color;
 }

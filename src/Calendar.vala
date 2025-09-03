@@ -23,21 +23,21 @@ namespace Bremin {
             append(main_box);
 
             var header_box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 10);
-            header_box.set_halign(Gtk.Align.CENTER);
             header_box.margin_bottom = 12;
             main_box.append(header_box);
+
+            month_label = new Gtk.Label("");
+            month_label.add_css_class("cb-title");
+            month_label.add_css_class("month-label");
+            month_label.set_hexpand(true);
+            month_label.set_halign(Gtk.Align.START);
+            header_box.append(month_label);
 
             prev_button = new He.Button(null, null);
             prev_button.icon = "go-previous-symbolic";
             prev_button.is_disclosure = true;
             prev_button.clicked.connect(go_previous_month);
             header_box.append(prev_button);
-
-            month_label = new Gtk.Label("");
-            month_label.add_css_class("cb-title");
-            month_label.set_hexpand(true);
-            month_label.set_halign(Gtk.Align.CENTER);
-            header_box.append(month_label);
 
             next_button = new He.Button(null, null);
             next_button.icon = "go-next-symbolic";
@@ -54,17 +54,18 @@ namespace Bremin {
                 var label = new Gtk.Label(day_names[i]);
                 label.add_css_class("caption");
                 label.set_halign(Gtk.Align.CENTER);
-                label.set_size_request(56, -1);
+                label.set_size_request(40, -1);
                 day_labels_grid.attach(label, i, 0);
             }
 
             date_grid = new Gtk.Grid();
+            date_grid.set_column_homogeneous(true);
             main_box.append(date_grid);
 
             for (int row = 0; row < 6; row++) {
                 for (int col = 0; col < 7; col++) {
                     var button = new He.Button(null, null);
-                    button.set_size_request(56, 56);
+                    button.set_size_request(40, 40);
                     button.is_tint = true;
                     button.add_css_class ("session-button");
                     date_buttons[row, col] = button;
@@ -119,7 +120,27 @@ namespace Bremin {
                     );
 
                     if (session_days.contains(date_key)) {
-                        button.add_css_class("session-day");
+                        var drawing_area = new Gtk.DrawingArea();
+                        drawing_area.set_size_request(40,40);
+                        drawing_area.set_draw_func((da, cr, w, h) => {
+                            var center_x = w / 2.0;
+                            var center_y = h / 2.0;
+                            var radius = Math.fmin(w, h) / 2;
+                            Gdk.RGBA color = {};
+                            color.parse("#e8f4b8"); // Acid green color
+                            Gdk.RGBA line = {};
+                            line.parse("#838a5b"); // Acid green color
+
+                            draw_flower_line(cr, center_x, center_y, radius, line);
+                            draw_flower_shape(cr, center_x, center_y, radius-0.5, color);
+                        });
+                        var label = new Gtk.Label(date.to_string());
+                        label.set_halign(Gtk.Align.CENTER);
+                        label.set_valign(Gtk.Align.CENTER);
+                        var overlay = new Gtk.Overlay();
+                        overlay.set_child(drawing_area);
+                        overlay.add_overlay(label);
+                        button.set_child(overlay);
                     }
 
                     date++;
@@ -143,6 +164,125 @@ namespace Bremin {
                 session_days.set(date_str, true);
             }
             update_calendar();
+        }
+
+        private void draw_flower_shape(Cairo.Context cr, double center_x, double center_y,
+                                             double radius, Gdk.RGBA color) {
+            cr.save();
+            cr.translate(center_x, center_y);
+
+            cr.new_path();
+
+            // Create flower shape with 8 pointed teardrop petals
+            int petals = 8; // N, NE, E, SE, S, SW, W, NW
+            for (int i = 0; i < petals; i++) {
+                double angle = (2.0 * Math.PI * i) / petals;
+
+                // Create teardrop petal shape
+                double petal_length = radius;
+                double petal_width = radius * 2;
+
+                // Calculate petal tip position
+                double tip_x = Math.cos(angle) * petal_length;
+                double tip_y = Math.sin(angle) * petal_length;
+
+                // Calculate base control points for petal width
+                double base_width_angle1 = angle - Math.PI / 2.0;
+                double base_width_angle2 = angle + Math.PI / 2.0;
+
+                double base_x1 = Math.cos(base_width_angle1) * petal_width * 0.5;
+                double base_y1 = Math.sin(base_width_angle1) * petal_width * 0.5;
+                double base_x2 = Math.cos(base_width_angle2) * petal_width * 0.5;
+                double base_y2 = Math.sin(base_width_angle2) * petal_width * 0.5;
+
+                // Draw teardrop petal using curves
+                if (i == 0) {
+                    cr.move_to(0, 0); // Start from center
+                } else {
+                    cr.line_to(0, 0); // Connect to center
+                }
+
+                // Left curve of petal
+                cr.curve_to(
+                    base_x1 * 0.3, base_y1 * 0.3,  // Control point near center
+                    tip_x * 0.7 + base_x1 * 0.3, tip_y * 0.7 + base_y1 * 0.3,  // Control point towards tip
+                    tip_x, tip_y  // Petal tip
+                );
+
+                // Right curve of petal back to center
+                cr.curve_to(
+                    tip_x * 0.7 + base_x2 * 0.3, tip_y * 0.7 + base_y2 * 0.3,  // Control point towards tip
+                    base_x2 * 0.3, base_y2 * 0.3,  // Control point near center
+                    0, 0  // Back to center
+                );
+            }
+            cr.close_path();
+
+            // Solid color
+            cr.set_source_rgba(color.red, color.green, color.blue, color.alpha);
+            cr.fill();
+
+            cr.restore();
+        }
+
+        private void draw_flower_line(Cairo.Context cr, double center_x, double center_y,
+                                             double radius, Gdk.RGBA color) {
+            cr.save();
+            cr.translate(center_x, center_y);
+
+            cr.new_path();
+
+            // Create flower shape with 8 pointed teardrop petals
+            int petals = 8; // N, NE, E, SE, S, SW, W, NW
+            for (int i = 0; i < petals; i++) {
+                double angle = (2.0 * Math.PI * i) / petals;
+
+                // Create teardrop petal shape
+                double petal_length = radius;
+                double petal_width = radius * 2;
+
+                // Calculate petal tip position
+                double tip_x = Math.cos(angle) * petal_length;
+                double tip_y = Math.sin(angle) * petal_length;
+
+                // Calculate base control points for petal width
+                double base_width_angle1 = angle - Math.PI / 2.0;
+                double base_width_angle2 = angle + Math.PI / 2.0;
+
+                double base_x1 = Math.cos(base_width_angle1) * petal_width * 0.5;
+                double base_y1 = Math.sin(base_width_angle1) * petal_width * 0.5;
+                double base_x2 = Math.cos(base_width_angle2) * petal_width * 0.5;
+                double base_y2 = Math.sin(base_width_angle2) * petal_width * 0.5;
+
+                // Draw teardrop petal using curves
+                if (i == 0) {
+                    cr.move_to(0, 0); // Start from center
+                } else {
+                    cr.line_to(0, 0); // Connect to center
+                }
+
+                // Left curve of petal
+                cr.curve_to(
+                    base_x1 * 0.3, base_y1 * 0.3,  // Control point near center
+                    tip_x * 0.7 + base_x1 * 0.3, tip_y * 0.7 + base_y1 * 0.3,  // Control point towards tip
+                    tip_x, tip_y  // Petal tip
+                );
+
+                // Right curve of petal back to center
+                cr.curve_to(
+                    tip_x * 0.7 + base_x2 * 0.3, tip_y * 0.7 + base_y2 * 0.3,  // Control point towards tip
+                    base_x2 * 0.3, base_y2 * 0.3,  // Control point near center
+                    0, 0  // Back to center
+                );
+            }
+            cr.close_path();
+
+            // Solid color
+            cr.set_source_rgba(color.red, color.green, color.blue, color.alpha);
+            cr.set_line_width(1.0);
+            cr.stroke();
+
+            cr.restore();
         }
     }
 }

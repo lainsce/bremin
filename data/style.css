@@ -1,6 +1,7 @@
 .daily-sentence-box {
     box-shadow: inset 0 0 10px 10px alpha(@success_bg_color, 0.14);
     padding: 50px;
+    background: @success_container_bg_color;
     color: @success_color;
     font-size: 1.33rem;
 }

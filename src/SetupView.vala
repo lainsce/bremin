@@ -41,7 +41,6 @@ namespace Bremin {
 
             // Settings cards
             var settings_content = new Gtk.Box(Gtk.Orientation.VERTICAL, 4);
-            settings_content.add_css_class("content-list");
             append (settings_content);
 
             var settings_card1 = new He.Card.horizontal();

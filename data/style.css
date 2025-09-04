@@ -1,3 +1,11 @@
+@define-color window_bg_color #e3e0ff;
+@define-color surface_container_high_bg_color #d9d7ff;
+@define-color surface_container_highest_bg_color #d9d7ff;
+
+.sidebared {
+    background: shade(@window_bg_color, 1.024);
+}
+
 .daily-sentence-box {
     box-shadow: inset 0 0 10px 10px alpha(@success_bg_color, 0.14);
     padding: 50px;
@@ -14,13 +22,6 @@
 }
 .session-button:disabled {
     background: none;
-}
-.report-background {
-    background: linear-gradient(
-        90deg,
-        @success_container_bg_color 0%,
-        @accent_container_bg_color 100%
-    );
 }
 .metric-star {
     background: alpha(@view_bg_color, 0.9);

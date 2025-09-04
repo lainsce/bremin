@@ -15,8 +15,6 @@ namespace Bremin {
         }
 
         private void setup_ui() {
-            add_css_class("report-background");
-            add_css_class("xxx-large-radius");
             margin_end = 18;
             margin_start = 18;
             margin_bottom = 12;

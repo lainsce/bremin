@@ -28,8 +28,6 @@ namespace Bremin {
             margin_end = 18;
             margin_start = 18;
             margin_bottom = 12;
-            add_css_class("surface-container-bg-color");
-            add_css_class("xxx-large-radius");
 
             time_label = new Gtk.Label("");
             time_label.add_css_class("big-display");

@@ -27,7 +27,8 @@ namespace Bremin {
             main_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_UP_DOWN);
 
             var nav_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 0);
-            nav_box.set_size_request(106, -1);
+            nav_box.add_css_class("sidebared");
+            nav_box.set_size_request(116, -1);
 
             nav_header_bar = new He.AppBar();
             nav_header_bar.show_left_title_buttons = true;

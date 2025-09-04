@@ -251,29 +251,57 @@ namespace Bremin {
                 size_multiplier = min_multiplier;
             }
 
-            double current_radius = max_radius * size_multiplier;
+            // Create Sunny shape and clip to it
+            cr.save();
 
-            // Draw 2 blue sunny shapes (outer layers)
-            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.95,
-                           {0.55f, 0.65f, 0.85f, 0.5f}); // Outer blue layer
-            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.9,
-                           {0.55f, 0.65f, 0.85f, 0.2f}); // Inner blue layer
+            // Create concentric Sunny shapes with gradient effect
+            int layers = 18;
+            for (int i = 0; i < layers; i++) {
+                cr.save();
 
-            // Draw acid yellow sunny shapes (decreasing sizes)
-            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.85,
-                           {0.85f, 0.9f, 0.4f, 0.2f});
-            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.8,
-                           {0.85f, 0.9f, 0.4f, 0.2f});
-            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.75,
-                           {0.85f, 0.9f, 0.4f, 0.2f});
-            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.7,
-                           {0.85f, 0.9f, 0.4f, 0.2f});
-            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.65,
-                           {0.85f, 0.9f, 0.4f, 0.2f});
-            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.6,
-                           {0.85f, 0.9f, 0.4f, 0.2f});
-            draw_sunny_shape(cr, center_x, center_y, current_radius * 0.55,
-                           {0.85f, 0.9f, 0.4f, 0.2f});
+                // Calculate radius factor from 1.0 down to 0.1
+                double radius_factor = 1.0 - (0.9 * i / (layers - 1));
+                double radius = Math.fmin(width, height) * 0.4;
+                double current_radius = radius * radius_factor * size_multiplier;
+
+                double r, g, b;
+
+                if (i == 0) {
+                    // Outermost layer: #b0b5fe
+                    r = 0.69;
+                    g = 0.71;
+                    b = 0.996;
+                } else if (i == 1) {
+                    // Second outer layer: #c6c7fe
+                    r = 0.776;
+                    g = 0.78;
+                    b = 0.996;
+                } else {
+                    // Yellow gradient from #e3ed86 to #eef37b to #f1fe9e
+                    double t = (double)(i - 2) / (layers - 3);
+
+                    if (t < 0.5) {
+                        // Gradient from #e3ed86 to #eef37b
+                        double blend = t / 0.5;
+                        r = 0.89 + (0.933 - 0.89) * blend;
+                        g = 0.929 + (0.953 - 0.929) * blend;
+                        b = 0.525 - (0.525 - 0.482) * blend;
+                    } else {
+                        // Gradient from #eef37b to #f1fe9e
+                        double blend = (t - 0.5) / 0.5;
+                        r = 0.933 + (0.945 - 0.933) * blend;
+                        g = 0.953 + (0.996 - 0.953) * blend;
+                        b = 0.482 + (0.62 - 0.482) * blend;
+                    }
+                }
+
+                cr.set_source_rgb(r, g, b);
+                draw_sunny_shape(cr, center_x, center_y, current_radius);
+                cr.fill();
+
+                cr.restore();
+            }
+            cr.restore();
 
             // Draw center - Flower shape at constant size, solid color
             double center_size = 12.0; // Fixed size, no scaling
@@ -281,29 +309,26 @@ namespace Bremin {
                             {0.137f, 0.224f, 0.553f, 1.0f}); // Dark blue, solid
         }
 
-        private void draw_sunny_shape(Cairo.Context cr, double center_x, double center_y,
-                                            double radius, Gdk.RGBA color) {
-            cr.save();
-            cr.translate(center_x, center_y);
+        private void draw_sunny_shape(Cairo.Context cr, double center_x, double center_y, double radius) {
+            int waves = 8;
+            int points_per_wave = 20;
+            int total_points = waves * points_per_wave;
 
             cr.new_path();
 
-            // Create smooth sunny shape with 8 bulges using continuous sine wave
-            int points = 100; // High resolution for smooth curve
-            int bulges = 8;
-            double base_radius = radius * 0.75;
-            double bulge_amount = radius * 0.05;
+            for (int i = 0; i <= total_points; i++) {
+                double angle = (2 * Math.PI * i) / total_points;
 
-            for (int i = 0; i <= points; i++) {
-                double angle = (2.0 * Math.PI * i) / points;
+                // Create smooth wave pattern for Sunny shape
+                // Modulate radius with sine wave for smooth undulations
+                // Use cosine to align peaks with cardinal directions
+                double wave_depth = 0.12;
+                double modulation = 1.0 + wave_depth * Math.cos(waves * angle);
+                double r = radius * modulation;
 
-                // Create smooth radius variation using sine wave for bulges
-                double bulge_phase = angle * bulges + Math.PI / 2.0;
-                double radius_variation = Math.sin(bulge_phase);
-                double current_radius = base_radius + bulge_amount * radius_variation;
-
-                double x = Math.cos(angle) * current_radius;
-                double y = Math.sin(angle) * current_radius;
+                // Start from top (no rotation offset needed)
+                double x = center_x + r * Math.cos(angle - Math.PI / 2);
+                double y = center_y + r * Math.sin(angle - Math.PI / 2);
 
                 if (i == 0) {
                     cr.move_to(x, y);
@@ -311,13 +336,8 @@ namespace Bremin {
                     cr.line_to(x, y);
                 }
             }
+
             cr.close_path();
-
-            // Solid color with alpha
-            cr.set_source_rgba(color.red, color.green, color.blue, color.alpha);
-            cr.fill();
-
-            cr.restore();
         }
 
         private void draw_flower_shape(Cairo.Context cr, double center_x, double center_y,

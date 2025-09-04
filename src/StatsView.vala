@@ -76,12 +76,12 @@ namespace Bremin {
 
             var exp_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 4);
             exp_box.set_margin_bottom(12);
-            exp_box.set_margin_start(12);
-            exp_box.set_margin_end(12);
             append(exp_box);
 
             var exp_box_labels = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
             exp_box_labels.hexpand = true;
+            exp_box_labels.set_margin_start(12);
+            exp_box_labels.set_margin_end(12);
             exp_box.append(exp_box_labels);
 
             exp_label = new Gtk.Label("Level 1");
@@ -98,8 +98,6 @@ namespace Bremin {
             exp_box.append(exp_bar);
 
             custom_calendar = new CustomCalendar();
-            custom_calendar.set_halign(Gtk.Align.CENTER);
-            custom_calendar.set_valign(Gtk.Align.START);
             append(custom_calendar);
         }
 

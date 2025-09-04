@@ -67,4 +67,31 @@ namespace Bremin {
 
         return daily_phrases[phrase_index].printf(user_name);
     }
+
+    public static double ease_in_out_cubic(double t) {
+        return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+    }
+
+    public static double ease_in_out_sine(double t) {
+        return -(Math.cos(Math.PI * t) - 1) / 2;
+    }
+
+    public static double clamp(double value, double min, double max) {
+        return Math.fmax(min, Math.fmin(max, value));
+    }
+
+    public static Gdk.RGBA rgba_from_string(string color_string) {
+        Gdk.RGBA color = {};
+        if (color.parse(color_string)) {
+            return color;
+        }
+        // Return black as fallback
+        return {0.0f, 0.0f, 0.0f, 1.0f};
+    }
+
+    public static string format_duration(int total_seconds) {
+        int minutes = total_seconds / 60;
+        int seconds = total_seconds % 60;
+        return "%02d:%02d".printf(minutes, seconds);
+    }
 }

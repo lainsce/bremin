@@ -140,8 +140,8 @@ namespace Bremin {
                 if (btn_3_icon != null) btn_3_icon.visible = false;
                 if (btn_5_icon != null) btn_5_icon.visible = false;
             } else if (duration_3_btn.get_active() && btn_3_icon != null) {
-            btn_3_icon.visible = true;
-            btn_3_icon.set_from_icon_name("clock-filled-symbolic");
+                btn_3_icon.visible = true;
+                btn_3_icon.set_from_icon_name("clock-filled-symbolic");
                 if (btn_1_icon != null) btn_1_icon.visible = false;
                 if (btn_5_icon != null) btn_5_icon.visible = false;
             } else if (duration_5_btn.get_active() && btn_5_icon != null) {

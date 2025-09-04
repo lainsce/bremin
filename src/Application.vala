@@ -9,6 +9,9 @@ namespace Bremin {
         }
 
         public static int main (string[] args) {
+            // Initialize GStreamer
+            Gst.init (ref args);
+
             var app = new BreminApp ();
             return app.run (args);
         }

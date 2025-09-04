@@ -18,9 +18,12 @@ namespace Bremin {
         private bool jitter_enabled;
         private int breath_count = 0;
         private int64 session_start_time = 0;
+        private SoundManager sound_manager;
+        private string current_instruction = "";
 
         public SessionView() {
             Object(orientation: Gtk.Orientation.VERTICAL, spacing: 6);
+            sound_manager = new SoundManager();
             setup_ui();
         }
 
@@ -90,6 +93,7 @@ namespace Bremin {
             is_paused = false;
             breath_count = 0;
             session_start_time = GLib.get_monotonic_time();
+            current_instruction = "";
 
             update_time_display();
             pause_button.set_icon_name("media-playback-pause-symbolic");
@@ -165,7 +169,7 @@ namespace Bremin {
 
             if (breath_phase < 0.25) {
                 // Inhale phase (0-0.25)
-                double phase_progress = breath_phase * 4.0; // 0.0 to 1.0
+                double phase_progress = breath_phase * 4.0;
                 phase_second = 5 - (int)Math.floor(phase_progress * 5.0);
                 instruction = "Inhale";
                 icon = "pan-up-symbolic";
@@ -187,6 +191,12 @@ namespace Bremin {
                 phase_second = 5 - (int)Math.floor(phase_progress * 5.0);
                 instruction = "Hold";
                 icon = "media-playback-pause-symbolic";
+            }
+
+            // Play sound on phase transitions
+            if (sounds_enabled && instruction != current_instruction) {
+                sound_manager.play_phase_ding();
+                current_instruction = instruction;
             }
 
             if (phase_second < 1) phase_second = 1;
@@ -219,81 +229,120 @@ namespace Bremin {
             }
             is_running = false;
 
+            // Play completion sound if sounds are enabled
+            if (sounds_enabled) {
+                sound_manager.play_completion_sound();
+            }
+
             var window = get_root() as MainWindow;
             window?.session_completed(total_seconds / 60, breath_count);
         }
 
         private void draw_breathing_flower(Gtk.DrawingArea area, Cairo.Context cr, int width, int height) {
-            double center_x = width / 2.0; // 188.5
-            double center_y = height / 2.0; // 188.5
+            double center_x = width / 2.0;
+            double center_y = height / 2.0;
 
-            // Fixed dimensions: 377x377 area, 355px max diameter, 211px min diameter
-            double max_radius = 177.5; // 355px diameter
-            double min_radius = 105.5; // 211px diameter
+            double max_radius = 177.5;
+            double min_radius = 105.5;
+            double min_multiplier = min_radius / max_radius;
 
-            // Calculate size multiplier based on breath phase
-            double size_multiplier;
-            double min_multiplier = min_radius / max_radius; // ~0.594
-
+            // Calculate base size multiplier
+            double base_size_multiplier;
             if (breath_phase < 0.25) {
-                // Inhale: grow from min to max
-                size_multiplier = min_multiplier + (breath_phase * 4.0) * (1.0 - min_multiplier);
+                base_size_multiplier = min_multiplier + (breath_phase * 4.0) * (1.0 - min_multiplier);
             } else if (breath_phase < 0.5) {
-                // Hold inhaled: stay at max
-                size_multiplier = 1.0;
+                base_size_multiplier = 1.0;
             } else if (breath_phase < 0.75) {
-                // Exhale: shrink from max to min
-                size_multiplier = 1.0 - ((breath_phase - 0.5) * 4.0) * (1.0 - min_multiplier);
+                base_size_multiplier = 1.0 - ((breath_phase - 0.5) * 4.0) * (1.0 - min_multiplier);
             } else {
-                // Hold exhaled: stay at min
-                size_multiplier = min_multiplier;
+                base_size_multiplier = min_multiplier;
             }
 
-            // Create Sunny shape and clip to it
             cr.save();
 
-            // Create concentric Sunny shapes with gradient effect
             int layers = 18;
+            double time_offset = GLib.get_monotonic_time() / 1000000.0;
+
             for (int i = 0; i < layers; i++) {
                 cr.save();
 
-                // Calculate radius factor from 1.0 down to 0.1
                 double radius_factor = 1.0 - (0.9 * i / (layers - 1));
                 double radius = Math.fmin(width, height) * 0.4;
-                double current_radius = radius * radius_factor * size_multiplier;
 
-                double r, g, b;
+                // Staggered animation - each layer lags behind
+                double layer_lag = i * 0.015;
+                double staggered_phase = breath_phase - layer_lag;
+                if (staggered_phase < 0.0) staggered_phase += 1.0;
+
+                // Calculate staggered size multiplier
+                double staggered_size_multiplier;
+                if (staggered_phase < 0.25) {
+                    staggered_size_multiplier = min_multiplier + (staggered_phase * 4.0) * (1.0 - min_multiplier);
+                } else if (staggered_phase < 0.5) {
+                    staggered_size_multiplier = 1.0;
+                } else if (staggered_phase < 0.75) {
+                    staggered_size_multiplier = 1.0 - ((staggered_phase - 0.5) * 4.0) * (1.0 - min_multiplier);
+                } else {
+                    staggered_size_multiplier = min_multiplier;
+                }
+
+                double current_radius = radius * radius_factor * staggered_size_multiplier;
+
+                // Jitter rotation for blooming/wilting effect
+                double rotation = 0.0;
+                if (jitter_enabled) {
+                    double jitter_speed = 0.5 + (i * 0.1);
+                    double bloom_factor = Math.sin(time_offset * jitter_speed + i * 0.3) * 0.08;
+                    rotation = bloom_factor * (1.0 + i * 0.1);
+                }
+
+                cr.translate(center_x, center_y);
+                cr.rotate(rotation);
+                cr.translate(-center_x, -center_y);
+
+                double r, g, b, a = 1.0;
 
                 if (i == 0) {
-                    // Outermost layer: #b0b5fe
-                    r = 0.69;
-                    g = 0.71;
-                    b = 0.996;
+                    r = 0.69; g = 0.71; b = 0.996;
                 } else if (i == 1) {
-                    // Second outer layer: #c6c7fe
-                    r = 0.776;
-                    g = 0.78;
-                    b = 0.996;
+                    r = 0.776; g = 0.78; b = 0.996;
                 } else {
-                    // Yellow gradient from #e3ed86 to #eef37b to #f1fe9e
+                    // Yellow layers - smoother alpha transitions throughout cycle
                     double t = (double)(i - 2) / (layers - 3);
 
                     if (t < 0.5) {
-                        // Gradient from #e3ed86 to #eef37b
                         double blend = t / 0.5;
                         r = 0.89 + (0.933 - 0.89) * blend;
                         g = 0.929 + (0.953 - 0.929) * blend;
                         b = 0.525 - (0.525 - 0.482) * blend;
                     } else {
-                        // Gradient from #eef37b to #f1fe9e
                         double blend = (t - 0.5) / 0.5;
                         r = 0.933 + (0.945 - 0.933) * blend;
                         g = 0.953 + (0.996 - 0.953) * blend;
                         b = 0.482 + (0.62 - 0.482) * blend;
                     }
+
+                    // Smooth alpha based on breathing cycle - avoid sudden transitions
+                    double alpha_base = 1.0;
+                    double fade_strength = 0.4; // Reduced from 0.7 for subtler effect
+
+                    if (staggered_phase >= 0.2 && staggered_phase <= 0.55) {
+                        // Hold inhaled - smooth fade using sine curve
+                        double hold_progress = (staggered_phase - 0.2) / 0.35;
+                        double fade_factor = Math.sin(hold_progress * Math.PI);
+                        alpha_base = 1.0 - (fade_factor * fade_strength);
+                    } else if (staggered_phase >= 0.7) {
+                        // Hold exhaled - smooth fade using sine curve
+                        double hold_progress = (staggered_phase - 0.7) / 0.3;
+                        if (hold_progress > 1.0) hold_progress = 1.0;
+                        double fade_factor = Math.sin(hold_progress * Math.PI);
+                        alpha_base = 1.0 - (fade_factor * fade_strength);
+                    }
+
+                    a = Math.fmax(0.2, alpha_base);
                 }
 
-                cr.set_source_rgb(r, g, b);
+                cr.set_source_rgba(r, g, b, a);
                 draw_sunny_shape(cr, center_x, center_y, current_radius);
                 cr.fill();
 
@@ -301,10 +350,10 @@ namespace Bremin {
             }
             cr.restore();
 
-            // Draw center - Flower shape at constant size, solid color
-            double center_size = 12.0; // Fixed size, no scaling
-            draw_flower_shape(cr, center_x, center_y, center_size,
-                            {0.137f, 0.224f, 0.553f, 1.0f}); // Dark blue, solid
+            // Center flower at constant size
+            double center_size = 12.0;
+            Gdk.RGBA center_color = {0.137f, 0.224f, 0.553f, 1.0f};
+            draw_flower_shape(cr, center_x, center_y, center_size, center_color);
         }
 
         private void draw_sunny_shape(Cairo.Context cr, double center_x, double center_y, double radius) {
@@ -317,14 +366,10 @@ namespace Bremin {
             for (int i = 0; i <= total_points; i++) {
                 double angle = (2 * Math.PI * i) / total_points;
 
-                // Create smooth wave pattern for Sunny shape
-                // Modulate radius with sine wave for smooth undulations
-                // Use cosine to align peaks with cardinal directions
                 double wave_depth = 0.12;
                 double modulation = 1.0 + wave_depth * Math.cos(waves * angle);
                 double r = radius * modulation;
 
-                // Start from top (no rotation offset needed)
                 double x = center_x + r * Math.cos(angle - Math.PI / 2);
                 double y = center_y + r * Math.sin(angle - Math.PI / 2);
 
@@ -345,20 +390,16 @@ namespace Bremin {
 
             cr.new_path();
 
-            // Create flower shape with 8 pointed teardrop petals
-            int petals = 8; // N, NE, E, SE, S, SW, W, NW
+            int petals = 8;
             for (int i = 0; i < petals; i++) {
                 double angle = (2.0 * Math.PI * i) / petals;
 
-                // Create teardrop petal shape
                 double petal_length = radius;
                 double petal_width = radius * 2;
 
-                // Calculate petal tip position
                 double tip_x = Math.cos(angle) * petal_length;
                 double tip_y = Math.sin(angle) * petal_length;
 
-                // Calculate base control points for petal width
                 double base_width_angle1 = angle - Math.PI / 2.0;
                 double base_width_angle2 = angle + Math.PI / 2.0;
 
@@ -367,30 +408,26 @@ namespace Bremin {
                 double base_x2 = Math.cos(base_width_angle2) * petal_width * 0.5;
                 double base_y2 = Math.sin(base_width_angle2) * petal_width * 0.5;
 
-                // Draw teardrop petal using curves
                 if (i == 0) {
-                    cr.move_to(0, 0); // Start from center
+                    cr.move_to(0, 0);
                 } else {
-                    cr.line_to(0, 0); // Connect to center
+                    cr.line_to(0, 0);
                 }
 
-                // Left curve of petal
                 cr.curve_to(
-                    base_x1 * 0.3, base_y1 * 0.3,  // Control point near center
-                    tip_x * 0.7 + base_x1 * 0.3, tip_y * 0.7 + base_y1 * 0.3,  // Control point towards tip
-                    tip_x, tip_y  // Petal tip
+                    base_x1 * 0.3, base_y1 * 0.3,
+                    tip_x * 0.7 + base_x1 * 0.3, tip_y * 0.7 + base_y1 * 0.3,
+                    tip_x, tip_y
                 );
 
-                // Right curve of petal back to center
                 cr.curve_to(
-                    tip_x * 0.7 + base_x2 * 0.3, tip_y * 0.7 + base_y2 * 0.3,  // Control point towards tip
-                    base_x2 * 0.3, base_y2 * 0.3,  // Control point near center
-                    0, 0  // Back to center
+                    tip_x * 0.7 + base_x2 * 0.3, tip_y * 0.7 + base_y2 * 0.3,
+                    base_x2 * 0.3, base_y2 * 0.3,
+                    0, 0
                 );
             }
             cr.close_path();
 
-            // Solid color
             cr.set_source_rgba(color.red, color.green, color.blue, color.alpha);
             cr.fill();
 

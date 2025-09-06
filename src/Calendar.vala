@@ -34,14 +34,16 @@ namespace Bremin {
             header_box.append(month_label);
 
             prev_button = new He.Button(null, null);
-            prev_button.icon = "go-previous-symbolic";
-            prev_button.is_disclosure = true;
+            prev_button.icon = "pan-start-symbolic";
+            prev_button.is_iconic = true;
+            prev_button.color = He.ButtonColor.SURFACE;
             prev_button.clicked.connect(go_previous_month);
             header_box.append(prev_button);
 
             next_button = new He.Button(null, null);
-            next_button.icon = "go-next-symbolic";
-            next_button.is_disclosure = true;
+            next_button.icon = "pan-end-symbolic";
+            next_button.is_iconic = true;
+            next_button.color = He.ButtonColor.SURFACE;
             next_button.clicked.connect(go_next_month);
             header_box.append(next_button);
 

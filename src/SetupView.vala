@@ -103,11 +103,13 @@ namespace Bremin {
             // Sound setting
             sound_switch = new He.Switch();
             sound_switch.set_halign(Gtk.Align.END);
+            sound_switch.color = He.SwitchColor.SECONDARY;
             settings_card2.widget = sound_switch;
 
             // Jitter setting
             jitter_switch = new He.Switch();
             jitter_switch.set_halign(Gtk.Align.END);
+            jitter_switch.color = He.SwitchColor.SECONDARY;
             settings_card3.widget = jitter_switch;
 
             start_button = new He.Button(null, "Start Breathing");

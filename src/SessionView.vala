@@ -71,6 +71,7 @@ namespace Bremin {
             pause_button = new He.Button("media-playback-pause-symbolic", null);
             pause_button.is_pill = true;
             pause_button.width = He.ButtonWidth.WIDE;
+            pause_button.size = He.ButtonSize.MEDIUM;
             pause_button.clicked.connect(toggle_pause);
             controls_box.add_widget(pause_button);
 
@@ -79,6 +80,7 @@ namespace Bremin {
             stop_button.is_pill = true;
             stop_button.width = He.ButtonWidth.NARROW;
             stop_button.color = He.ButtonColor.SECONDARY;
+            stop_button.size = He.ButtonSize.MEDIUM;
             stop_button.clicked.connect(stop_session);
             controls_box.add_widget(stop_button);
         }
